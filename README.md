@@ -215,6 +215,13 @@ Update `Config/defaults.json` to contain:
       }
     }
 
+Ensure that the [WebHooks](http://pusher.com/docs/webhooks) endpoint is correctly configured to match `webhookHost` within your Pusher application.
+This can be done in the WebHooks settings panel within the Pusher dashboard. The URL for this is:
+http://app.pusherapp.com/apps/YOUR_APP_ID/web_hooks
+
+If you are running hallway locally you may need to use a service such as [localtunnel](http://progrium.com/localtunnel/)
+to expose the service so that Pusher can access the WebHook endpoint.
+
 ### Starting the Pusher streamer
 
     ./hallway pusher
