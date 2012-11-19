@@ -49,6 +49,17 @@
     "port": 8069,
     "listenIP": "0.0.0.0"
   },
+  "pusher": {
+    "apihost": "http://localhost:8042",
+    "webhookHost": "http://localhost:8070",
+    "port": 8070,
+    "listenIP": "0.0.0.0",
+    "credentials": {
+      "key": "foo",
+      "secret": "bar",
+      "id": "foobar"
+    }
+  },
   "authSecrets": {
     "crypt": "foo",
     "sign": "bar",
