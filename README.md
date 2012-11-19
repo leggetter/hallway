@@ -193,4 +193,40 @@ the local host and port that you have Hallway running on.
 Here is the [NodeJS Example](https://singly.com/docs/getting_started_node) to
 get started.
 
+## Using Hallway and Pusher
 
+As well as a [socket.io](http://socket.io) streamer for server to client data delivery
+there is also a [Pusher](http://pusher.com) streamer which uses the Singly Push API and
+pushes updates through Pusher to connected clients.
+
+### Configuring the Pusher streamer
+
+Update `Config/defaults.json` to contain:
+
+    "pusher": {
+      "apihost": "http://localhost:8042", // your hallway running instance
+      "webhookHost": "http://localhost:8070", // the pusher streamer instance. Used for push API WebHooks
+      "port": 8070, // generally the same as webhookHost
+      "listenIP": "0.0.0.0",
+      "credentials": { // credentials from an application in your Pusher account
+        "key": "YOUR_PUSHER_APP_KEY",
+        "secret": "YOUR_APP_SECRET",
+        "id": "YOUR_APP_ID"
+      }
+    }
+
+### Starting the Pusher streamer
+
+    ./hallway pusher
+
+### Example Client
+
+An example client can be found here: https://github.com/leggetter/pusher-singly-client
+
+### TODO:
+
+* Since [WebHooks](http://pusher.com/docs/webhooks) are used to identify subscriptions it can mean that a subscription won't get
+any initial data if the channel is already occupied (because the WebHook won't be triggered). Potential solutions are:
+  1. Don't use WebHooks - first subscribe to the channel then make an AJAX call to the streamer service to do the service subscription.
+  2. Pusher plan to offer event history. At that point history can be retrieved on the initial subscription. **preferred solution**
+* Pusher offers [private channels](http://pusher.com/docs/private_channels) which give a server the opportunity to authenticate a subscription. This may be a better solution than making the `access_token` part of the channel name. **TBD**

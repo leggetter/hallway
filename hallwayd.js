@@ -73,6 +73,16 @@ function startStream(cbDone) {
   });
 }
 
+function startPusherStream(cbDone) {
+  logger.info("Starting a Hallway Pusher -- you're in for an awesome time.");
+
+  require('pusherStreamer').startService(lconfig.pusher, function() {
+    logger.info("Listening for WebHooks on port %d", lconfig.pusher.port);
+
+    cbDone();
+  });
+}
+
 function startWorkerWS(cbDone) {
   if (!lconfig.worker || !lconfig.worker.port) {
     logger.error("You must specify a worker section with at least a port and " +
@@ -118,6 +128,9 @@ var Roles = {
   },
   stream: {
     startup: startStream
+  },
+  pusher: {
+    startup: startPusherStream
   }
 };
 
@@ -141,7 +154,8 @@ if (argv._.length > 0) {
 
 var startupTasks = [];
 
-if (role !== Roles.stream) {
+if (role !== Roles.stream &&
+    role !== Roles.pusher) {
   // this loads all lib/services/*/map.js
   startupTasks.push(require('dMap').startup);
   startupTasks.push(require('ijod').initDB);
@@ -149,7 +163,9 @@ if (role !== Roles.stream) {
   startupTasks.push(startTaskman);
 }
 
-if (role !== Roles.dawg && role !== Roles.stream) {
+if (role !== Roles.dawg &&
+    role !== Roles.stream && 
+    role !== Roles.pusher) {
   startupTasks.push(require('acl').init);
   startupTasks.push(profileManager.init);
 }

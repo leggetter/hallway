@@ -78,6 +78,7 @@
     "encoding":"=0.1.4",
     "mimelib":"",
     "xml2js":"=0.2.2",
-    "nodemailer":""
+    "nodemailer":"",
+    "node-pusher": ""
   }
 }
