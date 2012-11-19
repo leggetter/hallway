@@ -1,62 +1,72 @@
 var request = require('request');
 var async = require('async');
+var argv = require('optimist')
+    .default('hours', 24)
+    .default('host', 'https://dawg.singly.com')
+    .demand(['auth', 'app-id'])
+    .usage('node scripts/tops.js --auth dawguser:dawgpass --app-id appid')
+    .argv;
 
-var auth = process.argv[2];
-var app = process.argv[3];
-var hours = process.argv[4] || 24;
-
-if(!auth || !app)
-{
-  console.log("node scripts/tops.js dawguser:dawgpass appid");
-  process.exit(1);
-}
-
-var req = {url:'https://dawg.singly.com/apps/logs'};
-req.qs = {key:app, limit:100, offset:0};
-req.headers = {"Authorization":"Basic " + new Buffer(auth).toString("base64")};
-req.json = true;
-var until = Date.now() - (3600*hours*1000);
+var req = {
+  url: argv.host + '/apps/logs',
+  qs: {
+    key:argv['app-id'],
+    limit:100,
+    offset:0
+  },
+  headers: {
+   Authorization:"Basic " + new Buffer(argv.auth).toString("base64")
+  },
+  json: true
+};
+var until = Date.now() - (3600*argv.hours*1000);
 var accounts = {};
 var actprofile = {};
 
-console.log('<table><tr>');
-console.log('<td>Account</td><td>API hits</td><td>Name</td><td>Social Profile</td>');
-console.log('</tr>');
+var log = console.log;
+var error = console.error;
 
-step(function(){
-  async.forEachLimit(Object.keys(accounts), 10, function(act, cbAct){
+log('<table><tr>');
+log('<td>Account</td><td>API hits</td><td>Name</td><td>Social Profile</td>');
+log('</tr>');
 
-    request.get({url:'https://dawg.singly.com/proxy/'+act+'/profile', headers:req.headers, json:true}, function(err, resp, profile){
+step(function() {
+  async.forEachLimit(Object.keys(accounts), 10, function(act, cbAct) {
+    request.get({url: argv.host + '/proxy/'+act+'/profile',
+      headers:req.headers, json:true}, function(err, resp, profile) {
+      if (err) error('failed to proxy for profile', err);
       actprofile[act] = profile || {};
       cbAct();
     });
-  }, function(){
+  }, function() {
     var acts = Object.keys(accounts);
     acts.sort(function(a,b){ return accounts[b] - accounts[a]; });
-    acts.forEach(function(act){
-      var line = '<tr>';
-      line += '<td><a href="https://dawg.singly.com/apps/account?id='+act+'">' +
-                  act.substring(0, 6) + '</a></td>';
-      line += '<td>'+accounts[act]+'</td>';
-      line += '<td>'+actprofile[act].name+'</td>';
-      line += '<td><a href="'+actprofile[act].url+'">' + actprofile[act].handle + '</a></td>';
-      line += '</tr>';
-      console.log(line);
+    acts.forEach(function(id) {
+      logRow(id, accounts[id], actprofile[id]);
     });
-    console.log('</table>');
+    log('</table>');
   });
 });
 
-function step(cb)
-{
-//  console.log(req.qs.offset);
-  request.get(req, function(err, res, logs){
+function logRow(id, account, profile) {
+  var line = '<tr>';
+  line += '<td><a href="https://dawg.singly.com/apps/account?id='+id+'">' +
+    id.substring(0, 6) + '</a></td>';
+  line += '<td>'+account+'</td>';
+  line += '<td>'+profile.name+'</td>';
+  line += '<td><a href="'+profile.url+'">' + profile.handle + '</a></td>';
+  line += '</tr>';
+  log(line);
+}
+
+function step(cb) {
+  request.get(req, function(err, res, logs) {
     if(err || !Array.isArray(logs)) return cb();
     var older = false;
-    logs.forEach(function(log){
+    logs.forEach(function(log) {
       if(log.at < until) older = true;
       if(!Array.isArray(log.data)) return;
-      log.data.forEach(function(hit){
+      log.data.forEach(function(hit) {
         if(!hit.act || hit.act == 'auth') return;
         if(!accounts[hit.act]) accounts[hit.act] = 0;
         accounts[hit.act]++;
@@ -67,3 +77,4 @@ function step(cb)
     step(cb);
   });
 }
+
