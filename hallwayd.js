@@ -152,7 +152,7 @@ var role = Roles.apihost;
 function startTaskman(cbDone) {
   var isWorker = (role === Roles.worker);
   if (isWorker) logger.info("Starting a worker.");
-  taskman.init(argv.pid, isWorker, argv.once, cbDone);
+  taskman.init(isWorker, argv.once, cbDone);
 }
 
 if (argv._.length > 0) {
