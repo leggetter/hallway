@@ -1,13 +1,18 @@
-function lintFiles(grunt) {
+var LIB_BLOCKLIST = [
+  /services/,
+  'lib/firebase-auth-server.js'
+];
+
+function libFiles(grunt) {
   var filesToLint = [];
   grunt.file.expand(
     'lib/**/*.js'
-    // To ignore a subdirectory you'd do this:
-    //'!lib/services/zeo/oauth/**/*.js'
   ).forEach(function (file) {
-    // And this:
-    //if (file.indexOf('zeo/oauth') === -1)
-    filesToLint.push(file);
+    var blocked = false;
+    LIB_BLOCKLIST.forEach(function(blocker) {
+      if (file === blocker || file.match(blocker)) blocked = true;
+    });
+    if (!blocked) filesToLint.push(file);
   });
   return filesToLint;
 }
@@ -27,13 +32,14 @@ module.exports = function (grunt) {
       }
     },
     lint: {
-      src: lintFiles(grunt),
-      scripts: 'scripts/**/*.js',
-      grunt: 'grunt.js',
-      tests: 'test/**/*.js'
+      grunt    : 'grunt.js',
+      lib      : libFiles(grunt),
+      services : 'lib/services/**/*.js',
+      tests    : 'test/**/*.js',
+      scripts  : 'scripts/**/*.js'
     },
     watch: {
-      files: '<config:lint.src>',
+      files: '<config:lint.lib>',
       tasks: 'default'
     },
     jshint: {
@@ -96,5 +102,5 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-simple-mocha');
 
   // Default task.
-  grunt.registerTask('default', 'lint:src simplemocha');
+  grunt.registerTask('default', 'lint:lib lint:services simplemocha');
 };
