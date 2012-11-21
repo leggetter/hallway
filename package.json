@@ -44,7 +44,7 @@
     "flickr-js": "=0.0.3",
     "fitbit-js": "=0.1.0",
     "fivebeans": "0.2.x",
-    "generic-pool": "=2.0.2",
+    "generic-pool": "=1.0.9",
     "gift": "0.0.5",
     "gzippo": "=0.1.4",
     "hiredis": "0.1.x",
