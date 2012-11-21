@@ -68,6 +68,7 @@ if (lconfig.alerting && lconfig.alerting.key) {
 
 var taskman = require('taskman');
 var profileManager = require('profileManager');
+var taskmaster = require('taskmaster');
 
 var http = require('http');
 
@@ -132,7 +133,25 @@ function startWorkerWS(cbDone) {
   });
 }
 
+function startTaskmaster(cbDone) {
+  if (!lconfig.taskmaster || !lconfig.taskmaster.port) {
+    logger.error("You must specify a taskmaster section with at least a port and password to run.");
+    shutdown(1);
+  }
+  var worker = require("worker"); // reuse this for now, common things should be refactored someday
+  if (!lconfig.taskmaster.listenIP) lconfig.taskmaster.listenIP = "0.0.0.0";
+  worker.startService(lconfig.taskmaster.port, lconfig.taskmaster.listenIP, function() {
+    taskmaster.init(function(){
+      logger.info("Started a Hallway Taskmaster, world re-mastered!", lconfig.taskmaster);
+      cbDone();      
+    });
+  });
+}
+
 var Roles = {
+  taskmaster: {
+    startup: startTaskmaster
+  },
   worker: {
     startup: startWorkerWS
   },

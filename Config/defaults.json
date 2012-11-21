@@ -17,6 +17,10 @@
     "listenIP": "0.0.0.0",
     "port": 8041
   },
+  "taskmaster": {
+    "listenIP": "0.0.0.0",
+    "port": 8049
+  },
   "stats": {},
   "database": {
     "maxConnections": 10,
