@@ -4,14 +4,14 @@
   "key": "Key",
   "secret": "Secret",
   "icons": [
-    {"height": 16, "width": 16, "source":"http://assets.singly.com/service-icons/16px/flickr.png"},
-    {"height": 24, "width": 24, "source":"http://assets.singly.com/service-icons/24px/flickr.png"},
-    {"height": 32, "width": 32, "source":"http://assets.singly.com/service-icons/32px/flickr.png"}
+    {"height": 16, "width": 16, "source": "http://assets.singly.com/service-icons/16px/flickr.png"},
+    {"height": 24, "width": 24, "source": "http://assets.singly.com/service-icons/24px/flickr.png"},
+    {"height": 32, "width": 32, "source": "http://assets.singly.com/service-icons/32px/flickr.png"}
   ],
     "synclets":[
-        {"name": "self", "frequency": 86400},
-        {"name": "photos", "frequency": 3600},
-        {"name": "contacts", "frequency": 86400},
-        {"name": "photos_feed", "frequency": 3600}
+        {"name": "self",         "frequency": 86400,  "class": "core"},
+        {"name": "photos",       "frequency": 3600,   "class": "personal"},
+        {"name": "contacts",     "frequency": 86400,  "class": "personal"},
+        {"name": "photos_feed",  "frequency": 3600,   "class": "social"}
     ]
 }
