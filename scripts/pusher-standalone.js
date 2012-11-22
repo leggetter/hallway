@@ -1,8 +1,8 @@
 var lconfig = require('lconfig');
-
-console.dir( lconfig );
-
 var logger = require('logger').logger('pusher-standalone');
+
+// if the runtime provides a port we should use it
+lconfig.pusher.port = ( process.env.PORT || lconfig.pusher.port );
 
 logger.info( 'Starting pusher-standalone');
 
