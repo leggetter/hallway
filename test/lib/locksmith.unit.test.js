@@ -7,8 +7,7 @@ var pid = 'pid@service';
 
 describe('locksmith', function() {
   before(function(done) {
-    locksmith.init('localworker', false);
-    done();
+    locksmith.init('localworker', done);
   });
 
   beforeEach(function(done) {
