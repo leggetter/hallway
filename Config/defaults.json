@@ -72,5 +72,6 @@
   "keys": [],
   "papertrailToken": "",
   "papertrailGroup": 0,
-  "ijod_backend": "mem"
+  "ijod_backend": "mem",
+  "partition":{}
 }
