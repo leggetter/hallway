@@ -32,6 +32,7 @@ var testdb = require("testdb");
 var _ = require("underscore");
 var ijod = require("ijod");
 var dal = require("dal");
+var idr = require("idr");
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //
@@ -59,6 +60,15 @@ var TESTDATA =  _.flatten(
   })
 );
 
+// Helper function to convert a dataset of [{idr, data}, ...] into a map of ranges
+function datasetToRange(dataset) {
+  return _.groupBy(dataset, function (item) {
+    var base = idr.base(item.idr);
+    delete base.pathname;
+    return idr.toString(base);
+  });
+}
+
 // Helper function to retrieve all items from test data via IJOD
 function getAllOnes(dataset, callback) {
   async.forEachSeries(dataset, function (expected, cont) {
@@ -71,7 +81,21 @@ function getAllOnes(dataset, callback) {
   }, callback);
 }
 
-
+function getRanges(dataset, callback) {
+  var ranges = datasetToRange(dataset);
+  async.forEachSeries(_.keys(ranges), function (key, cont) {
+    var expected = ranges[key];
+    var actual = [];
+    console.log("Key: " + key);
+    ijod.getRange(key, {}, function (value) { actual.push(value); },
+                  function (err) {
+                    console.log("Actual: " + JSON.stringify(actual));
+                    assert.ifError(err);
+                    assert.equal(expected, actual);
+                    cont();
+                  });
+  }, callback);
+}
 
 describe("ijod", function () {
   before(function (done) {
@@ -95,7 +119,7 @@ describe("ijod", function () {
     done();
   });
 
-  it('should use only Entries table by default', function (done) {
+  it.skip('should use only Entries table by default', function (done) {
     // Force empty partition configuration
     lconfig.partition = {};
 
@@ -115,7 +139,7 @@ describe("ijod", function () {
   }); // it
 
 
-  it('should read latest data from partition tables', function (done) {
+  it.skip('should read latest data from partition tables', function (done) {
     // Force empty partition configuration for initial insert
     lconfig.partition = {};
 
@@ -125,7 +149,6 @@ describe("ijod", function () {
 
       // Verify reading back through API functions as expected
       getAllOnes(TESTDATA, function () {
-        console.log("Wrote TESTDATA");
         // Mutate dataset
         var data1 = _.map(TESTDATA, function (entry) {
           return { idr: entry.idr, data: "newdata"};
@@ -139,9 +162,28 @@ describe("ijod", function () {
           assert.ifError(err);
 
           // Verify ijod reflects latest changes
-          getAllOnes(data1, done);
+          getAllOnes(data1, function () {
+            // Drop the original Entries table and reverify all values
+            // are still present
+            testdb.query("DROP TABLE Entries", [], function () {
+              getAllOnes(data1, done);
+            });
+          });
         });
       });
     });
-  }); // it
+  }); // it - should read latest data
+
+  it('should read merged data from partition tables', function (done) {
+    // Force empty partition configuration for initial insert
+    lconfig.partition = {};
+
+    // Insert all the data
+    ijod.batchSmartAdd(TESTDATA, function (err) {
+      assert.ifError(err);
+
+      // Verify that reading ranges returns expected values
+      getRanges(TESTDATA, done);
+    });
+  }); // it - should read merged data
 });
