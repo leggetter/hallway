@@ -6,10 +6,8 @@
 
   "apis": [
   <% var sortedServices = Object.keys(services).sort();
-  var len = sortedServices.length;
-  for (c = 0; c < len; c++) {
-    var key = sortedServices[c];
-    if (services.hasOwnProperty(key)) { %>
+     for (c = 0; c < sortedServices.length; c++) {
+       var key = sortedServices[c]; %>
     {
       "path":"/services/<%= key %>/{endpoint}",
       "description":"<%= services[key].name %>",
@@ -28,12 +26,7 @@
               "allowableValues":{
                 "valueType":"LIST",
                 "values":[
-                  <%
-                  var list = [];
-                  var synclets = services[key].synclets;
-                  for (var i=0; i<synclets.length; i++) list.push('"'+synclets[i].name+'"');
-                  %>
-                  <%- list.join(',') %>
+                  <%- listEndpoints(key, services[key].synclets) %>
                 ]
               }
             },
@@ -51,8 +44,7 @@
         }
       ]
     },
-  <% }
-  } %>
+  <% } %>
     {
       "path":"/services",
       "description":"list available services",
