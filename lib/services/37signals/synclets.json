@@ -1,0 +1,14 @@
+{
+  "name":"37signals",
+  "desc":"Authentication only",
+  "key": "Client ID",
+  "secret": "Client Secret",
+  "icons": [
+    {"height": 16, "width": 16, "source":"http://assets.singly.com/service-icons/16px/37signals.png"},
+    {"height": 24, "width": 24, "source":"http://assets.singly.com/service-icons/24px/37signals.png"},
+    {"height": 32, "width": 32, "source":"http://assets.singly.com/service-icons/32px/37signals.png"}
+  ],
+  "synclets":[
+    {"name": "self", "frequency": 86400, "class": "core"}
+  ]
+}
