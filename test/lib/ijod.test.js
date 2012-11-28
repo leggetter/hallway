@@ -50,21 +50,28 @@ var origDALBackend = dal.getBackend();
 
 // Test Data - [{idr, data}] for 10 users, 3 services and 10 photos
 var TESTDATA =  _.flatten(
-  _.map(_.range(1), function (uid) {
+  _.map(_.range(2), function (uid) {
     return _.map(["twitter"], function (svc) {
-      return _.map(_.range(1), function (ctx) {
-        return {idr: "photos:user" + uid + "@" + svc + "/" + ctx,
+      return _.map(_.range(2), function (ctx) {
+        return {idr: "photos:user" + uid + "@" + svc + "/mentions#" + ctx,
                 data: "somedatathatshouldbeapicture"};
       });
     });
   })
 );
 
+// Helper function strip keys other than idr, data from a dataset
+// (ijod modifies things passed into it, so we lose pristine copies of objects)
+function cleanDataset(dataset) {
+  return _.map(dataset, function (item) {
+    return { idr: item.idr, data: item.data };
+  });
+}
+
 // Helper function to convert a dataset of [{idr, data}, ...] into a map of ranges
 function datasetToRange(dataset) {
   return _.groupBy(dataset, function (item) {
     var base = idr.base(item.idr);
-    delete base.pathname;
     return idr.toString(base);
   });
 }
@@ -81,17 +88,31 @@ function getAllOnes(dataset, callback) {
   }, callback);
 }
 
+// Helper function that implements contains for deep equality of objects
+// (With apologies to underscore.js)
+_.contains = function (obj, target) {
+  if (obj === null) return false;
+  return _.any(obj, function (value) {
+    return _.isEqual(value, target);
+  });
+};
+
+
 function getRanges(dataset, callback) {
   var ranges = datasetToRange(dataset);
   async.forEachSeries(_.keys(ranges), function (key, cont) {
-    var expected = ranges[key];
+    var expected = cleanDataset(ranges[key]);
     var actual = [];
-    console.log("Key: " + key);
-    ijod.getRange(key, {}, function (value) { actual.push(value); },
+    ijod.getRange(key, {},
+                  function (value) { actual.push(value); },
                   function (err) {
-                    console.log("Actual: " + JSON.stringify(actual));
                     assert.ifError(err);
-                    assert.equal(expected, actual);
+                    actual = cleanDataset(actual);
+
+                    // All actual entries are expected
+                    assert.deepEqual([], _.difference(actual, expected));
+                    // All expected entries are present
+                    assert.deepEqual([], _.difference(expected, actual));
                     cont();
                   });
   }, callback);
@@ -119,7 +140,7 @@ describe("ijod", function () {
     done();
   });
 
-  it.skip('should use only Entries table by default', function (done) {
+  it('should use only Entries table by default', function (done) {
     // Force empty partition configuration
     lconfig.partition = {};
 
@@ -138,43 +159,46 @@ describe("ijod", function () {
     });
   }); // it
 
+  var getFns = {"getOne": getAllOnes,
+                "getRange": getRanges };
+  _.each(_.keys(getFns), function (name) {
+    it('should read latest data from partition tables: ' + name, function (done) {
+      // Force empty partition configuration for initial insert
+      lconfig.partition = {};
 
-  it.skip('should read latest data from partition tables', function (done) {
-    // Force empty partition configuration for initial insert
-    lconfig.partition = {};
+      // Insert all the data
+      ijod.batchSmartAdd(TESTDATA, function (err) {
+        assert.ifError(err);
 
-    // Insert all the data
-    ijod.batchSmartAdd(TESTDATA, function (err) {
-      assert.ifError(err);
+        // Verify reading back through API functions as expected
+        getFns[name](TESTDATA, function () {
+          // Mutate dataset
+          var data1 = _.map(TESTDATA, function (entry) {
+            return { idr: entry.idr, data: "newdata"};
+          });
 
-      // Verify reading back through API functions as expected
-      getAllOnes(TESTDATA, function () {
-        // Mutate dataset
-        var data1 = _.map(TESTDATA, function (entry) {
-          return { idr: entry.idr, data: "newdata"};
-        });
+          // Adjust partition count
+          lconfig.partition.size = 2;
 
-        // Adjust partition count
-        lconfig.partition.size = 2;
+          // Store updated dataset
+          ijod.batchSmartAdd(data1, function (err) {
+            assert.ifError(err);
 
-        // Store updated dataset
-        ijod.batchSmartAdd(data1, function (err) {
-          assert.ifError(err);
-
-          // Verify ijod reflects latest changes
-          getAllOnes(data1, function () {
-            // Drop the original Entries table and reverify all values
-            // are still present
-            testdb.query("DROP TABLE Entries", [], function () {
-              getAllOnes(data1, done);
+            // Verify ijod reflects latest changes
+            getFns[name](data1, function () {
+              // Drop the original Entries table and reverify all values
+              // are still present
+              testdb.query("DROP TABLE Entries", [], function () {
+                getFns[name](data1, done);
+              });
             });
           });
         });
       });
-    });
-  }); // it - should read latest data
+    }); // it - should read latest data
+  });
 
-  it('should read merged data from partition tables', function (done) {
+  it('should resolve data across partition tables', function (done) {
     // Force empty partition configuration for initial insert
     lconfig.partition = {};
 
@@ -182,8 +206,38 @@ describe("ijod", function () {
     ijod.batchSmartAdd(TESTDATA, function (err) {
       assert.ifError(err);
 
-      // Verify that reading ranges returns expected values
-      getRanges(TESTDATA, done);
+      // Mutate every other entry in the dataset and generate
+      // a dataset with the merged changes and one with just
+      // changes
+      var data1All = [];
+      var data1OnlyNew = [];
+      var i = 0;
+      _.each(TESTDATA, function (entry) {
+        var newEntry;
+        if (i % 2 === 0) {
+          newEntry = {idr: entry.idr, data: "newdata"};
+          data1OnlyNew.push(newEntry);
+          data1All.unshift(newEntry);
+        } else {
+          data1All.push(entry);
+        }
+        i++;
+      });
+
+      // Adjust partition count
+      lconfig.partition.size = 2;
+
+      // Insert mutated data; there should now be data across ranges
+      // in old/new tables. We want to verify that the getRange returns
+      // data in both old and new
+      ijod.batchSmartAdd(data1OnlyNew, function (err) {
+        assert.ifError(err);
+
+        // Validate that getRange returns what we expect from our merged
+        // dataset
+        getRanges(data1All, done);
+      });
     });
-  }); // it - should read merged data
+  }); // it - should read latest data
+
 });
