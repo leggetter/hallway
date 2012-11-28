@@ -157,7 +157,7 @@ describe("ijod", function () {
         });
       });
     });
-  }); // it
+  }); // it should use only ...
 
   var getFns = {"getOne": getAllOnes,
                 "getRange": getRanges };
@@ -195,7 +195,7 @@ describe("ijod", function () {
           });
         });
       });
-    }); // it - should read latest data
+    }); // it - should read latest data ...
   });
 
   it('should resolve data across partition tables', function (done) {
@@ -209,19 +209,15 @@ describe("ijod", function () {
       // Mutate every other entry in the dataset and generate
       // a dataset with the merged changes and one with just
       // changes
-      var data1All = [];
-      var data1OnlyNew = [];
+      var data1 = [];
+      var changelist = [];
       var i = 0;
       _.each(TESTDATA, function (entry) {
-        var newEntry;
-        if (i % 2 === 0) {
-          newEntry = {idr: entry.idr, data: "newdata"};
-          data1OnlyNew.push(newEntry);
-          data1All.unshift(newEntry);
-        } else {
-          data1All.push(entry);
+        if (i++ % 2 === 0) {
+          entry = {idr: entry.idr, data: "newdata"};
+          changelist.push(entry);
         }
-        i++;
+        data1.push(entry);
       });
 
       // Adjust partition count
@@ -230,14 +226,14 @@ describe("ijod", function () {
       // Insert mutated data; there should now be data across ranges
       // in old/new tables. We want to verify that the getRange returns
       // data in both old and new
-      ijod.batchSmartAdd(data1OnlyNew, function (err) {
+      ijod.batchSmartAdd(changelist, function (err) {
         assert.ifError(err);
 
         // Validate that getRange returns what we expect from our merged
         // dataset
-        getRanges(data1All, done);
+        getRanges(data1, done);
       });
     });
-  }); // it - should read latest data
+  }); // it - should resolve data across...
 
 });
