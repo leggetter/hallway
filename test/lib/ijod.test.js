@@ -97,6 +97,33 @@ _.contains = function (obj, target) {
   });
 };
 
+// Helper function to extract the bounds on a dataset, by base
+function datasetBounds(dataset, state0) {
+  return _.foldl(dataset, function (acc, entry) {
+    var base = idr.toString(idr.base(entry.idr));
+    var accItem = acc[base] || { newest: 0, oldest: Date.now(), total: 0 };
+    accItem.oldest = Math.min(accItem.oldest, entry.at);
+    accItem.newest = Math.max(accItem.newest, entry.at);
+    accItem.total++;
+    acc[base] = accItem;
+    return acc;
+  }, state0 || {});
+}
+
+
+function checkBounds(bounds, callback) {
+  async.forEachSeries(_.keys(bounds), function (key, cont) {
+    var expected = bounds[key];
+    ijod.getBounds(key, {},
+                  function (err, actual) {
+                    assert.ifError(err);
+                    assert.equal(expected.oldest, actual.oldest);
+                    assert.equal(expected.newest, actual.newest);
+                    assert.equal(expected.total, actual.total);
+                    cont();
+                  });
+  }, callback);
+}
 
 function getRanges(dataset, callback) {
   var ranges = datasetToRange(dataset);
@@ -117,6 +144,7 @@ function getRanges(dataset, callback) {
                   });
   }, callback);
 }
+
 
 describe("ijod", function () {
   before(function (done) {
@@ -231,7 +259,11 @@ describe("ijod", function () {
 
         // Validate that getRange returns what we expect from our merged
         // dataset
-        getRanges(data1, done);
+        getRanges(data1, function () {
+          // Calculate bounds across all the datasets (since getBounds does not dedup)
+          var bounds = datasetBounds(changelist, datasetBounds(TESTDATA));
+          checkBounds(bounds, done);
+        });
       });
     });
   }); // it - should resolve data across...
