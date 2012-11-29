@@ -48,7 +48,7 @@ function init(callback) {
   INITED = true;
   ijod.initDB(function(err) {
     if (err) return callback(err);
-    taskman.init(null, null, null, callback);
+    taskman.init(null, null, callback);
   });
 }
 

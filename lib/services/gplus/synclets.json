@@ -1,8 +1,9 @@
 {
-  "name": "Google Plus",
+  "name":"Google Plus",
+  "desc":"Authentication only",
   "key": "Client ID",
-  "secret": "Client secret",
-  "provider": "gplus",
-  "provides": ["activity/gplus"],
-  "synclets": [{"name": "activities", "frequency": 86400, "class":"core"}]
+  "secret": "Client Secret",
+  "synclets": [
+    {"name": "self", "frequency": 86400, "class": "core"}
+  ]
 }
