@@ -33,6 +33,7 @@ var _ = require("underscore");
 var ijod = require("ijod");
 var dal = require("dal");
 var idr = require("idr");
+var partition = require('partition');
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //
@@ -171,6 +172,7 @@ describe("ijod", function () {
   it('should use only Entries table by default', function (done) {
     // Force empty partition configuration
     lconfig.partition = {};
+    partition.init();
 
     // Insert all the data
     ijod.batchSmartAdd(TESTDATA, function (err) {
@@ -193,6 +195,7 @@ describe("ijod", function () {
     it('should read latest data from partition tables: ' + name, function (done) {
       // Force empty partition configuration for initial insert
       lconfig.partition = {};
+      partition.init();
 
       // Insert all the data
       ijod.batchSmartAdd(TESTDATA, function (err) {
@@ -207,6 +210,7 @@ describe("ijod", function () {
 
           // Adjust partition count
           lconfig.partition.size = 2;
+          partition.init();
 
           // Store updated dataset
           ijod.batchSmartAdd(data1, function (err) {
@@ -229,6 +233,7 @@ describe("ijod", function () {
   it('should resolve data across partition tables', function (done) {
     // Force empty partition configuration for initial insert
     lconfig.partition = {};
+    partition.init();
 
     // Insert all the data
     ijod.batchSmartAdd(TESTDATA, function (err) {
@@ -250,6 +255,7 @@ describe("ijod", function () {
 
       // Adjust partition count
       lconfig.partition.size = 2;
+      partition.init();
 
       // Insert mutated data; there should now be data across ranges
       // in old/new tables. We want to verify that the getRange returns
