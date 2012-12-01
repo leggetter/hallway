@@ -55,7 +55,7 @@ function logRow(id, account, profile) {
   line += '<td>'+account+'</td>';
   line += '<td>'+profile.name+'</td>';
   line += '<td><a href="'+profile.url+'">' + profile.handle + '</a></td>';
-  line += '<td>'+profile.location+'</td>';
+  line += '<td>'+(profile.location||'')+'</td>';
   line += '</tr>';
   log(line);
 }

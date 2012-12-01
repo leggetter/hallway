@@ -61,8 +61,8 @@ function logRow(app, act, profile) {
    html += '<td>' + profile.name + '</td>';
    html += '<td><a href="' + profile.url + '">';
    html += profile.handle + '</a></td>';
+   html += '<td>' + (profile.location || '') + '</td>';
    html += '</tr>';
-   html += '<td>' + profile.location + '</td>';
    log(html);
 }
 
