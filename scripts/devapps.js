@@ -23,7 +23,7 @@ var log = console.log;
 var error = console.error;
 
 log('<table><tr>');
-log('<td>App ID</td><td>Account</td><td>Name</td><td>Social Profile</td>');
+log('<td>App ID</td><td>Account</td><td>Name</td><td>Social Prof</td><td>Loc</td>');
 log('</tr>');
 
 request.get({url:argv.host+'/productionappsactive', headers:req.headers, json:true},
@@ -62,6 +62,7 @@ function logRow(app, act, profile) {
    html += '<td><a href="' + profile.url + '">';
    html += profile.handle + '</a></td>';
    html += '</tr>';
+   html += '<td>' + profile.location + '</td>';
    log(html);
 }
 

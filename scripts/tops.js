@@ -27,7 +27,7 @@ var log = console.log;
 var error = console.error;
 
 log('<table><tr>');
-log('<td>Account</td><td>API hits</td><td>Name</td><td>Social Profile</td>');
+log('<td>Account</td><td>Hits</td><td>Name</td><td>Social Prof</td><td>Loc</td>');
 log('</tr>');
 
 step(function() {
@@ -55,6 +55,7 @@ function logRow(id, account, profile) {
   line += '<td>'+account+'</td>';
   line += '<td>'+profile.name+'</td>';
   line += '<td><a href="'+profile.url+'">' + profile.handle + '</a></td>';
+  line += '<td>'+profile.location+'</td>';
   line += '</tr>';
   log(line);
 }
