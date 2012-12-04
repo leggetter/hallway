@@ -21,8 +21,6 @@ var logger = require('logger').logger('hallwayd');
 
 logger.info('process id:' + process.pid);
 
-var alerting = require("alerting");
-
 function exit(returnCode) {
   logger.info("Shutdown complete");
 
@@ -56,15 +54,6 @@ function shutdown(returnCode, callback) {
   exit(returnCode);
 }
 
-if (lconfig.alerting && lconfig.alerting.key) {
-  alerting.init(lconfig.alerting);
-
-  alerting.install(function (E) {
-    logger.warn('Uncaught exception: %s', E.message);
-    logger.error(E);
-    shutdown(1);
-  });
-}
 
 var taskman = require('taskman');
 var profileManager = require('profileManager');
