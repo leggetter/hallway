@@ -232,66 +232,38 @@ process.on("SIGTERM", function () {
   shutdown(0);
 });
 
-if (!process.env.LOCKER_TEST) {
-  process.on('uncaughtException', function (err) {
-    try {
-      // copy of these in alerting.js so they don't fire alerts too
-      var E = err;
+process.on('uncaughtException', function(err) {
 
-      if (E.toString().indexOf('Error: Parse Error') >= 0) {
-        // ignoring this for now, relating to some node bug,
-        // https://github.com/joyent/node/issues/2997
-        logger.warn("ignored exception", E);
+  logger.error('Uncaught exception: ' + util.inspect(err));
+  logger.error(err.stack);
+
+  instruments.increment('exceptions.uncaught').send();
+
+  // If this is not an apihost, bail immediately
+  // TODO: Track down any/all root causes so we can get rid
+  // of this hack
+  if (role !== Roles.apihost) {
+    shutdown(1);
+  } else {
+    // Check for errors we are comfortable (!!) ignoring
+    var ignoredErrors = ["Error: Parse Error", // see: https://github.com/joyent/node/issues/2997
+                         "ECONNRESET",
+                         "socket hangup",
+                         "ETIMEDOUT",
+                         "EADDRINFO"];
+    var errString = err.toString();
+    for (var msg in ignoredErrors) {
+      if (errString.indexOf(ignoredErrors[msg]) >= 0) {
+        logger.warn("Ignored exception: ", ignoredErrors[msg]);
         instruments.increment('exceptions.ignored').send();
         return;
       }
-
-      if (E.toString().indexOf('ECONNRESET') >= 0 ||
-        E.toString().indexOf('socket hang up') >= 0) {
-        // THEORY: these bubble up from event emitter as uncaught errors, even
-        // though the socket end event still fires and are ignorable
-        logger.warn("ignored exception", E);
-        instruments.increment('exceptions.ignored').send();
-        return;
-      }
-
-      if (E.toString().indexOf('ETIMEDOUT') >= 0) {
-        // THEORY: these bubble up from event emitter as uncaught errors, even
-        // though the socket end event still fires and are ignorable
-        logger.warn("ignored exception", E);
-        instruments.increment('exceptions.ignored').send();
-        return;
-      }
-
-      if (E.toString().indexOf('EADDRINFO') >= 0) {
-        logger.warn("ignored exception", E);
-        instruments.increment('exceptions.ignored').send();
-        return;
-      }
-
-      logger.error('Uncaught exception:');
-      logger.error(util.inspect(err));
-
-      instruments.increment('exceptions.uncaught').send();
-
-      if (err && err.stack) {
-        logger.error(util.inspect(err.stack));
-      }
-
-      shutdown(1);
-    } catch (e) {
-      try {
-        console.error("Caught an exception while handling an uncaught " +
-          "exception!");
-        console.error(e);
-      } catch (e) {
-        // we tried...
-      }
-
-      process.exit(1);
     }
-  });
-}
+
+    // None of the errors we know about -- shutdown
+    shutdown(1);
+  }
+});
 
 // Export some things so this can be used by other processes,
 // mainly for the test runner
