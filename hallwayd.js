@@ -232,19 +232,17 @@ process.on("SIGTERM", function () {
   shutdown(0);
 });
 
-process.on('uncaughtException', function(err) {
+process.on('uncaughtException', function (err) {
 
-  logger.error('Uncaught exception: ' + util.inspect(err));
-  logger.error(err.stack);
+  logger.error('Uncaught exception: ' + err.stack);
 
   instruments.increment('exceptions.uncaught').send();
 
-  // If this is not an apihost, bail immediately
+  // If this is an apihost, there are some classes of errors
+  // we are comfortable (!!) ignoring. 
   // TODO: Track down any/all root causes so we can get rid
   // of this hack
-  if (role !== Roles.apihost) {
-    shutdown(1);
-  } else {
+  if (role === Roles.apihost) {
     // Check for errors we are comfortable (!!) ignoring
     var ignoredErrors = ["Error: Parse Error", // see: https://github.com/joyent/node/issues/2997
                          "ECONNRESET",
@@ -259,10 +257,10 @@ process.on('uncaughtException', function(err) {
         return;
       }
     }
-
-    // None of the errors we know about -- shutdown
-    shutdown(1);
   }
+
+  // None of the errors we know about -- shutdown
+  shutdown(1);
 });
 
 // Export some things so this can be used by other processes,
