@@ -67,6 +67,7 @@
     "sanitizer": "",
     "serializer": ">=0.0.2 <0.1.0",
     "socket.io": "",
+    "sprintf": "",
     "temp": ">=0.4.0",
     "tumblrwks": "https://github.com/Singly/tumblrwks/tarball/master",
     "supertest": "",
