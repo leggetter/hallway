@@ -223,7 +223,7 @@ process.on("SIGTERM", function () {
 
 process.on('uncaughtException', function (err) {
 
-  logger.error('Uncaught exception: ' + err.stack);
+  logger.warn('Uncaught exception: ' + err.stack);
 
   instruments.increment('exceptions.uncaught').send();
 
