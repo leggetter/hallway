@@ -2,7 +2,7 @@ export GIT_REVISION?=$(shell git rev-parse --short --default HEAD)
 # if not provided by Jenkins, then just use the gitrev
 export BUILD_NUMBER?=git-$(GIT_REVISION)
 
-.PHONY: deps build build_dev npm_modules npm_modules_dev build.json
+.PHONY: deps build build_dev npm_modules npm_modules_dev
 
 all: build
 	@echo
@@ -24,9 +24,9 @@ check_deps:
 	fi
 
 # Get Hallway ready to run
-build: check_deps npm_modules build.json
+build: check_deps npm_modules
 
-build_dev: check_deps npm_modules_dev build.json
+build_dev: check_deps npm_modules_dev
 
 # install node dependencies via npm
 npm_modules:
@@ -40,13 +40,6 @@ migrations:
 	@echo "Applying migrations"
 	./node_modules/db-migrate/bin/db-migrate -v --config Config/config.json -e database up
 .PHONY: migrations
-
-# build.json allows Hallway to report its build number and git revision at runtime
-# the test suite pretends that tests/ is the top of the source tree,
-# so drop a copy there too
-build.json:
-	@echo '{ "build" : "$(BUILD_NUMBER)", "gitrev" : "$(GIT_REVISION)" }' \
-	| tee $@ test/$@
 
 MOCHA = ./node_modules/.bin/mocha
 MOCHA_TESTS = $(shell find test -name "*.test.js")
@@ -86,6 +79,6 @@ jenkins:
 	$(MAKE) test-bindist
 
 clean:
-	rm -f "$(DISTFILE)" build.json test/build.json
+	rm -f "$(DISTFILE)"
 	rm -f "hallway-git-*.tar.gz"
 	rm -rf node_modules
