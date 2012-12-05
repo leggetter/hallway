@@ -21,51 +21,6 @@ var logger = require('logger').logger('hallwayd');
 
 logger.info('process id:' + process.pid);
 
-var alerting = require("alerting");
-
-function exit(returnCode) {
-  logger.info("Shutdown complete");
-
-  process.exit(returnCode);
-}
-
-var shuttingDown_ = false;
-
-// scheduling and misc things
-function shutdown(returnCode, callback) {
-  if (shuttingDown_ && returnCode !== 0) {
-    try {
-      console.error("Aieee! Shutdown called while already shutting down! " +
-        "Panicking!");
-    }
-    catch (e) {
-      // we tried...
-    }
-
-    process.exit(1);
-  }
-
-  shuttingDown_ = true;
-  process.stdout.write("\n");
-  logger.info('Shutting down...');
-
-  if (callback) {
-    return callback(returnCode);
-  }
-
-  exit(returnCode);
-}
-
-if (lconfig.alerting && lconfig.alerting.key) {
-  alerting.init(lconfig.alerting);
-
-  alerting.install(function (E) {
-    logger.warn('Uncaught exception: %s', E.message);
-    logger.error(E);
-    shutdown(1);
-  });
-}
-
 var taskman = require('taskman');
 var profileManager = require('profileManager');
 var taskmaster = require('taskmaster');
@@ -93,7 +48,7 @@ function startDawg(cbDone) {
     logger.error("You must specify a dawg section with at least a port and " +
       "password to run.");
 
-    shutdown(1);
+    process.exit(1);
   }
 
   logger.info("Starting a Hallway Dawg -- Think you can get away without " +
@@ -122,7 +77,7 @@ function startWorkerWS(cbDone) {
   if (!lconfig.worker || !lconfig.worker.port) {
     logger.error("You must specify a worker section with at least a port and " +
       "password to run.");
-    shutdown(1);
+    process.exit(1);
   }
   var worker = require("worker");
   if (!lconfig.worker.listenIP) lconfig.worker.listenIP = "0.0.0.0";
@@ -136,7 +91,7 @@ function startWorkerWS(cbDone) {
 function startTaskmaster(cbDone) {
   if (!lconfig.taskmaster || !lconfig.taskmaster.port) {
     logger.error("You must specify a taskmaster section with at least a port and password to run.");
-    shutdown(1);
+    process.exit(1);
   }
   var worker = require("worker"); // reuse this for now, common things should be refactored someday
   if (!lconfig.taskmaster.listenIP) lconfig.taskmaster.listenIP = "0.0.0.0";
@@ -178,7 +133,7 @@ if (argv._.length > 0) {
   if (!Roles.hasOwnProperty(argv._[0])) {
     logger.error("The %s role is unknown.", argv._[0]);
 
-    return shutdown(1);
+    return process.exit(1);
   }
 
   role = Roles[argv._[0]];
@@ -215,84 +170,51 @@ process.on("SIGINT", function() {
   switch (role) {
     case Roles.worker:
       taskman.stop(function() {
-        shutdown(0);
+        process.exit(0);
       });
       break;
     case Roles.apihost:
-      shutdown(0);
+      process.exit(0);
       break;
     default:
-      shutdown(0);
+      process.exit(0);
       break;
   }
 });
 
 process.on("SIGTERM", function () {
   logger.info("Shutting down via SIGTERM...");
-  shutdown(0);
+  process.exit(0);
 });
 
-if (!process.env.LOCKER_TEST) {
-  process.on('uncaughtException', function (err) {
-    try {
-      // copy of these in alerting.js so they don't fire alerts too
-      var E = err;
+process.on('uncaughtException', function (err) {
 
-      if (E.toString().indexOf('Error: Parse Error') >= 0) {
-        // ignoring this for now, relating to some node bug,
-        // https://github.com/joyent/node/issues/2997
-        logger.warn("ignored exception", E);
+  logger.warn('Uncaught exception: ' + err.stack);
+
+  instruments.increment('exceptions.uncaught').send();
+
+  // If this is an apihost, there are some classes of errors
+  // we are comfortable (!!) ignoring. 
+  // TODO: Track down any/all root causes so we can get rid
+  // of this hack
+  if (role === Roles.apihost) {
+    // Check for errors we are comfortable (!!) ignoring
+    var ignoredErrors = ["Error: Parse Error", // see: https://github.com/joyent/node/issues/2997
+                         "ECONNRESET",
+                         "socket hangup",
+                         "ETIMEDOUT",
+                         "EADDRINFO"];
+    var errString = err.toString();
+    for (var msg in ignoredErrors) {
+      if (errString.indexOf(ignoredErrors[msg]) >= 0) {
+        logger.warn("Ignored exception: ", ignoredErrors[msg]);
         instruments.increment('exceptions.ignored').send();
         return;
       }
-
-      if (E.toString().indexOf('ECONNRESET') >= 0 ||
-        E.toString().indexOf('socket hang up') >= 0) {
-        // THEORY: these bubble up from event emitter as uncaught errors, even
-        // though the socket end event still fires and are ignorable
-        logger.warn("ignored exception", E);
-        instruments.increment('exceptions.ignored').send();
-        return;
-      }
-
-      if (E.toString().indexOf('ETIMEDOUT') >= 0) {
-        // THEORY: these bubble up from event emitter as uncaught errors, even
-        // though the socket end event still fires and are ignorable
-        logger.warn("ignored exception", E);
-        instruments.increment('exceptions.ignored').send();
-        return;
-      }
-
-      if (E.toString().indexOf('EADDRINFO') >= 0) {
-        logger.warn("ignored exception", E);
-        instruments.increment('exceptions.ignored').send();
-        return;
-      }
-
-      logger.error('Uncaught exception:');
-      logger.error(util.inspect(err));
-
-      instruments.increment('exceptions.uncaught').send();
-
-      if (err && err.stack) {
-        logger.error(util.inspect(err.stack));
-      }
-
-      shutdown(1);
-    } catch (e) {
-      try {
-        console.error("Caught an exception while handling an uncaught " +
-          "exception!");
-        console.error(e);
-      } catch (e) {
-        // we tried...
-      }
-
-      process.exit(1);
     }
-  });
-}
+  }
 
-// Export some things so this can be used by other processes,
-// mainly for the test runner
-exports.shutdown = shutdown;
+  // None of the errors we know about -- shutdown
+  process.exit(1);
+});
+
