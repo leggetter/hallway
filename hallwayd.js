@@ -21,40 +21,6 @@ var logger = require('logger').logger('hallwayd');
 
 logger.info('process id:' + process.pid);
 
-function exit(returnCode) {
-  logger.info("Shutdown complete");
-
-  process.exit(returnCode);
-}
-
-var shuttingDown_ = false;
-
-// scheduling and misc things
-function shutdown(returnCode, callback) {
-  if (shuttingDown_ && returnCode !== 0) {
-    try {
-      console.error("Aieee! Shutdown called while already shutting down! " +
-        "Panicking!");
-    }
-    catch (e) {
-      // we tried...
-    }
-
-    process.exit(1);
-  }
-
-  shuttingDown_ = true;
-  process.stdout.write("\n");
-  logger.info('Shutting down...');
-
-  if (callback) {
-    return callback(returnCode);
-  }
-
-  exit(returnCode);
-}
-
-
 var taskman = require('taskman');
 var profileManager = require('profileManager');
 var taskmaster = require('taskmaster');
@@ -82,7 +48,7 @@ function startDawg(cbDone) {
     logger.error("You must specify a dawg section with at least a port and " +
       "password to run.");
 
-    shutdown(1);
+    process.exit(1);
   }
 
   logger.info("Starting a Hallway Dawg -- Think you can get away without " +
@@ -111,7 +77,7 @@ function startWorkerWS(cbDone) {
   if (!lconfig.worker || !lconfig.worker.port) {
     logger.error("You must specify a worker section with at least a port and " +
       "password to run.");
-    shutdown(1);
+    process.exit(1);
   }
   var worker = require("worker");
   if (!lconfig.worker.listenIP) lconfig.worker.listenIP = "0.0.0.0";
@@ -125,7 +91,7 @@ function startWorkerWS(cbDone) {
 function startTaskmaster(cbDone) {
   if (!lconfig.taskmaster || !lconfig.taskmaster.port) {
     logger.error("You must specify a taskmaster section with at least a port and password to run.");
-    shutdown(1);
+    process.exit(1);
   }
   var worker = require("worker"); // reuse this for now, common things should be refactored someday
   if (!lconfig.taskmaster.listenIP) lconfig.taskmaster.listenIP = "0.0.0.0";
@@ -167,7 +133,7 @@ if (argv._.length > 0) {
   if (!Roles.hasOwnProperty(argv._[0])) {
     logger.error("The %s role is unknown.", argv._[0]);
 
-    return shutdown(1);
+    return process.exit(1);
   }
 
   role = Roles[argv._[0]];
@@ -204,21 +170,21 @@ process.on("SIGINT", function() {
   switch (role) {
     case Roles.worker:
       taskman.stop(function() {
-        shutdown(0);
+        process.exit(0);
       });
       break;
     case Roles.apihost:
-      shutdown(0);
+      process.exit(0);
       break;
     default:
-      shutdown(0);
+      process.exit(0);
       break;
   }
 });
 
 process.on("SIGTERM", function () {
   logger.info("Shutting down via SIGTERM...");
-  shutdown(0);
+  process.exit(0);
 });
 
 process.on('uncaughtException', function (err) {
@@ -249,9 +215,6 @@ process.on('uncaughtException', function (err) {
   }
 
   // None of the errors we know about -- shutdown
-  shutdown(1);
+  process.exit(1);
 });
 
-// Export some things so this can be used by other processes,
-// mainly for the test runner
-exports.shutdown = shutdown;
