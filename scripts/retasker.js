@@ -47,7 +47,7 @@ function getPids(offset, limit, service, callback) {
 }
 
 function getOldsTaskPids(callback) {
-  var until = Date.now - (24 * 60 * 60 * 1000);
+  var until = Date.now() - (24 * 60 * 60 * 1000);
   var pids = {};
   async.forEachLimit(servezas.serviceList(), 10, function(service, cbService) {
     async.forEachLimit(servezas.syncletList(service), 10, function(synclet, cbSynclet) {
