@@ -193,11 +193,11 @@ process.on('uncaughtException', function (err) {
 
   instruments.increment('exceptions.uncaught').send();
 
-  // If this is an apihost, there are some classes of errors
-  // we are comfortable (!!) ignoring. 
+  // For any role OTHER than taskmaster, we try to ignore "innocous"
+  // errors. This is a temporary fix until we can track down source.
   // TODO: Track down any/all root causes so we can get rid
   // of this hack
-  if (role === Roles.apihost) {
+  if (role !== Roles.taskmaster) {
     // Check for errors we are comfortable (!!) ignoring
     var ignoredErrors = ["Error: Parse Error", // see: https://github.com/joyent/node/issues/2997
                          "ECONNRESET",
