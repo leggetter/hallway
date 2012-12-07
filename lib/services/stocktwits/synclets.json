@@ -1,5 +1,5 @@
 {
-	"name":"StockTwits Account",
+	"name":"StockTwits",
 	"desc":"Connect to and authenticate with any StockTwits profile",
   "key": "Consumer key",
   "secret": "Consumer secret",
