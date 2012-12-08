@@ -145,6 +145,7 @@ if (role !== Roles.stream) {
   // this loads all lib/services/*/map.js
   startupTasks.push(require('dMap').startup);
   startupTasks.push(require('ijod').initDB);
+  startupTasks.push(require('tokenz').init);
   startupTasks.push(startTaskman);
 }
 
