@@ -4,7 +4,7 @@ var Socket = require('net').Socket;
 
 var api = require('webservice').api;
 var authManager = require('authManager');
-var atok = authManager.provider.generateAccessToken(1, 1, {}).access_token;
+var atok = "eNxbZoAnD1UuM7kvY96rhnnxlrc.ivihwGYD738b5e2cc4799f90410cc7cace0e99657eb085072598bb8e91dd93bf9eeae8c48cd457f49fdf0fe9cc5d914d5bfa284099c2af15f6eaa19facc1facc1f67cc5f";
 
 var URLS = [
   'http://localhost:8041/v0/services/linkedin/connections?access_token=' + atok,

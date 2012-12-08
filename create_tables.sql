@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS Grants (
        code VARCHAR(255) PRIMARY KEY,
        account VARCHAR(255),
        app VARCHAR(255),
+       pid VARCHAR(255),
        cat TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
 );
 
