@@ -29,7 +29,10 @@ CREATE TABLE IF NOT EXISTS Accounts (
        account VARCHAR(255),
        app VARCHAR(255),
        profile VARCHAR(255),
-       cat TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+       cat TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+       KEY `app` (`account`),
+       KEY `account` (`app`),
+       KEY `profile` (`profile`)
 );
 
 CREATE TABLE IF NOT EXISTS Profiles (
