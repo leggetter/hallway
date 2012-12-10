@@ -6,6 +6,16 @@ CREATE TABLE IF NOT EXISTS Apps (
        cat TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE `Owners` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `account` varchar(255) DEFAULT NULL,
+  `app` varchar(255) DEFAULT NULL,
+  `role` varchar(255) DEFAULT NULL,
+  `cat` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `account` (`account`)
+);
+
 CREATE TABLE IF NOT EXISTS Grants (
        code VARCHAR(255) PRIMARY KEY,
        account VARCHAR(255),
@@ -19,7 +29,10 @@ CREATE TABLE IF NOT EXISTS Accounts (
        account VARCHAR(255),
        app VARCHAR(255),
        profile VARCHAR(255),
-       cat TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+       cat TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+       KEY `app` (`app`),
+       KEY `account` (`account`),
+       KEY `profile` (`profile`)
 );
 
 CREATE TABLE IF NOT EXISTS Profiles (
