@@ -1,8 +1,8 @@
 var request = require('request');
 var async = require('async');
 var argv = require('optimist')
-    .default('hours', 24)
-    .default('host', 'https://dawg.singly.com') .demand(['auth'])
+    ['default']('hours', 24)
+    ['default']('host', 'https://dawg.singly.com') .demand(['auth'])
     .usage('node scripts/tops.js --auth dawguser:dawgpass')
     .argv;
 
@@ -23,7 +23,7 @@ var log = console.log;
 var error = console.error;
 
 log('<table><tr>');
-log('<td>App ID</td><td>Account</td><td>Name</td><td>Social Prof</td><td>Loc</td>');
+log('<td>App ID</td><td>Account</td><td>Name</td><td>Social Prof</td><td>Loc</td><td>Email</td>');
 log('</tr>');
 
 request.get({url:argv.host+'/productionappsactive', headers:req.headers, json:true},
@@ -58,10 +58,11 @@ function logRow(app, act, profile) {
    html += '<td>';
    html += '<a href="https://dawg.singly.com/apps/account?id=' + act;
    html += '">' + act.substring(0, 6) + '</a></td>';
-   html += '<td>' + profile.name + '</td>';
+   html += '<td>' + (profile.name || '') + '</td>';
    html += '<td><a href="' + profile.url + '">';
-   html += profile.handle + '</a></td>';
+   html += (profile.handle || '') + '</a></td>';
    html += '<td>' + (profile.location || '') + '</td>';
+   html += '<td>' + (profile.email || '') + '</td>';
    html += '</tr>';
    log(html);
 }
@@ -75,7 +76,7 @@ function accounts(app, cb) {
       if(log.at < until) return;
       if(!Array.isArray(log.data)) return;
       log.data.forEach(function(hit){
-        if(!hit.act || hit.act == 'auth') return;
+        if(!hit.act || hit.act === 'auth') return;
         if(!acts[hit.act]) acts[hit.act] = true;
       });
     });
