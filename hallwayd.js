@@ -164,7 +164,7 @@ if (role !== Roles.stream &&
 }
 
 if (role !== Roles.dawg &&
-    role !== Roles.stream && 
+    role !== Roles.stream &&
     role !== Roles.pusher) {
   startupTasks.push(require('acl').init);
   startupTasks.push(profileManager.init);
